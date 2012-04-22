@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <title> - jsFiddle demo</title>
+  
+  <script type='text/javascript' src='https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js'></script>
+  <script type='text/javascript' src='http://documentcloud.github.com/underscore/underscore-min.js'></script>
+  
+
+  <link rel="stylesheet" type="text/css" href="/css/normalize.css">
+  <link rel="stylesheet" type="text/css" href="/css/result-light.css">
+  <script type='text/javascript' src="http://jslib-dotcloud-labs.dotcloud.com/dotcloud-require.js"></script>
+    
+  
+<style type='text/css'>
+img {
+  border-right: 0px;
+}
+body {
+  margin: 0px;
+  padding: 0px;
+  width: 100%;
+  height: 100%;
+  background-color: rgb(10,10,10);
+}
+#dropzone {
+  display: none;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  right: 0px;
+  width:100%;
+  height:100%;
+
+  background-color: rgba(1, 1, 1, 0.3);
+}
+#dropzone > div {
+  position: relative;
+}
+#dropzone .message {
+  width: 200px;
+  height: 160px;
+  margin: auto;
+  margin-top: 100px;
+  border: 2px solid rgba(1,1,1,0.3);
+  border-radius: 4px;
+  background-color: rgba(255,255,255, 1);
+  font-family: Helvetica, Arial, sans-serif;
+  text-align: center;
+  color: rgb(142,142,142);
+}
+#dropzone span {
+  position: absolute;
+  height: 20px;
+  width:100%;
+  bottom: 30px;
+  left: 0px;
+  right: 0px;
+
+}
+#dropzone i {
+  position: absolute;
+  left: 0px;
+  bottom: 2px;
+  width: 100%;
+  height: 20px;
+  color: rgb(100, 100, 100);
+  font-size: 14px;
+  overflow: hidden;
+}
+#dropzone img {
+  width: 36px;
+  height: 36px;
+  position: absolute;
+  left: 91px;
+  top: 40px;
+}
+
+#gallery {
+  padding: 4px;
+}
+#gallery .small {
+  width: 100px;
+  height: 100px;
+  margin: 1px;
+  border: 2px solid rgba(255,255,255, 0);
+  overflow: hidden;
+  float: left;
+  display: inline-block;
+  border-radius: 10px;
+}
+#gallery .small canvas {
+  border-radius: 4px;
+}
+
+#gallery .small:hover{
+  border: 2px solid rgb(255,255,255);
+  background-color: rgba(255,255,255, 1);
+}
+
+#lightbox {
+  display: none;
+  position: fixed;
+  top:0px;
+  left:0px;
+  right:0px;
+  bottom:0px;
+  background-color: rgba(1,1,1, 0.8);
+
+}
+
+#lightbox .roundButton {
+  width: 30px;
+  height: 30px;
+  background-color: rgba(1,1,1,0.8);
+  border-radius: 24px;
+  border: 3px solid rgba(255,255,255,1);
+
+  color: rgb(255,255,255);
+  font-family: Helvetica, Arial, "MS Trebuchet", sans-serif;
+  font-size: 30px;
+  font-weight: bold;
+  line-height: 24px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+#lightbox .roundButton:hover{
+  cursor: pointer;
+  color: rgba(255,255,255, 0.8);
+  border-color: rgba(255,255,255, 0.8);
+  background-color: rgba(255,255,255,0.2);
+  background-color: rgba(1,1,1,0.2);
+}
+#lightbox .roundButton::selection {
+  color: inherit;
+  background-color: tranparent;
+  cursor: pointer;
+}
+
+#lightbox .close{
+  position: absolute;
+  top: 12px;
+  right: 22px;
+}
+
+#lightbox .previous{
+  position: absolute;
+  top: 50%;
+  left: 22px;
+}
+
+#lightbox .next{
+  position: absolute;
+  top: 50%;
+  right: 22px;
+}
+
+#lightboxCanvas, #lightboxCanvas::selection {
+  color: inherit;
+  background-color: tranparent;
+  cursor: move;
+}
+#navCanvas {
+  position: absolute;
+  bottom: 0px;
+  right: 0px;
+  height: 100px;
+  width: 100px;
+  border: 2px solid rgba(255,255,255, 0.9);
+  background-color: rgba(1,1,1, 0.8);
+  border-top-left-radius: 4px;
+}
+
+</style>
+  
+
+
+<script type='text/javascript'>//<![CDATA[ 
+$(window).load(function(){
+/*
+    Jr's awesome dotCloud hackday on dotCloud:Fiddle
+*/
+window.images = {};
+
+var numberOfFiles = 0;
+
+function bodyWidthFix() {
+
+}
+bodyWidthFix()
+$(window).resize(bodyWidthFix);
+
+
+function lightboxView(id) {
+  // main canvas used to display the picture
+  var canvas = document.getElementById("lightboxCanvas");
+  canvas.width = $(window).width();
+  canvas.height = $(window).height();
+  var ctx = canvas.getContext('2d');
+
+  var x = 0, y = 0;
+  var dx = 0, dy = 0;
+
+  // navigation convas to display the visible part of the picture
+
+  // update lightbox
+  function update(i) {
+    // draw into the main canvas
+    ctx.drawImage(images[i], dx, dy);
+
+    // drag events
+    canvas.onmousedown = function(e) {
+      x = e.x;
+      y = e.y;
+    }
+    canvas.onmouseup = function(e) {
+      dx = x - e.x;
+      dy = y - e.y;
+      update(i, dx, dy);
+    }
+    
+
+    // close lightbox
+    $("#lightbox .close").click(function(e){
+      $("#lightbox").hide(200);
+    });
+
+    // previous picture
+    $("#lightbox .previous").click(function(e){
+      var pid = $('#'+i).parent('div.small').prev().find('canvas').attr('id');
+      if(pid) update(pid);
+    });
+
+    // next picture
+    $("#lightbox .next").click(function(e){
+      var nid = $('#'+i).parent('div.small').next().find('canvas').attr('id');
+      if(nid) update(nid);
+    });
+  };
+  update(id, dx, dy);
+}
+
+function bindings(){
+  $("div.small").unbind('click');
+  $("div.small").click(function(e){
+    $("#lightbox").show(200);
+    var id = $(this).find('canvas').attr('id');
+    lightboxView(id);
+  });
+}
+
+function navedSized(width, height) {
+  var w = 0, h = 0;
+
+  if(width <= height) {
+    w = width;
+    h = width;
+  } else {
+    w = height;
+    h = height;
+  }
+
+  return {sWidth: w, sHeight: h, sx: 0, sy: 0};
+}
+
+function squaredSized(width, height) {
+  var w = 0, h = 0;
+
+  if(width <= height) {
+    w = width;
+    h = width;
+  } else {
+    w = height;
+    h = height;
+  }
+
+  return {sWidth: w, sHeight: h, sx: 0, sy: 0};
+}
+
+function displayPicture(urlData) {
+  var canvasId = _.uniqueId('small-');
+  var template = _.template($("#tpml-small").html(), {urlData: urlData, canvasId: canvasId});
+  $("#gallery").append(template);
+
+  var canvas = document.getElementById(canvasId);
+  var ctx = canvas.getContext('2d');
+  images[canvasId] = new Image();
+  images[canvasId].src = urlData;
+
+  images[canvasId].onload = function() {
+    var dim = squaredSized(images[canvasId].width, images[canvasId].height);
+    //console.log(dim)
+    ctx.drawImage(images[canvasId], dim.sx, dim.sy, dim.sWidth, dim.sHeight, 0, 0, 100, 100);
+    //delete img;
+  }
+}
+
+function loadPicture(file) {
+  var reader = new FileReader();
+
+  reader.onload = function(e){
+    numberOfFiles--;
+    
+    displayPicture(e.target.result);
+
+    if(numberOfFiles == 0){
+      $('#dropzone').hide(100);
+      bindings();
+    }
+      
+  };
+
+  $('#infos').text(file.name);
+  reader.readAsDataURL(file);
+}
+
+
+document.ondrop = function(e){
+    e.preventDefault()
+    var files = e.dataTransfer.files;
+    numberOfFiles = files.length;
+    for (var i = files.length - 1; i >= 0; i--) {
+      loadPicture(files[i])
+    }
+
+}
+
+document.ondragenter = function(e) {
+  $('#dropzone').show(100);
+}
+
+});//]]>  
+
+</script>
+
+
+</head>
+<body>
+  <div id="dropzone">
+    <div class="message">
+      <div>
+        <img src="http://jimpunk.net/Loading/wp-content/uploads/loading3.gif" alt="loading" />
+        <span>loading pictures</span>
+        <i id="infos">loading infos</i>
+      </div>
+    </div>
+  </div>
+  <div id="lightbox">
+    <canvas id="lightboxCanvas"></canvas>
+    <div class="close roundButton">x</div>
+    <div class="previous roundButton">&lt;</div>
+    <div class="next roundButton">&gt;</div>
+    <canvas id="navCanvas"></canvas>
+  </div>
+
+  <script type="text/template" id="tpml-small">
+    <div class="small">
+      <!--<img src="<%=urlData%>" width="100px" height="100px" alt="@" />-->
+      <canvas width="100px" height="100px" id="<%=canvasId%>"></canvas>
+    </div>
+  </script>
+
+  <div id="gallery">
+  </div>
+</body>
+</html>
+
